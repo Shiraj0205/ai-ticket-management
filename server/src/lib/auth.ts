@@ -35,7 +35,9 @@ export const auth = betterAuth({
   session: {
     expiresIn: 60 * 60 * 24, // 24 hours
   },
-  trustedOrigins: [process.env.CLIENT_URL ?? "http://localhost:5173"],
+  trustedOrigins: process.env.TRUSTED_ORIGINS
+    ? process.env.TRUSTED_ORIGINS.split(",").map((o) => o.trim())
+    : ["http://localhost:5173"],
 });
 
 export type Session = typeof auth.$Infer.Session;
