@@ -1,22 +1,30 @@
 import { PrismaClient } from "@prisma/client";
-import bcrypt from "bcryptjs";
+import { auth } from "../lib/auth.js";
 
 const prisma = new PrismaClient();
 
 async function main() {
-  // Create admin user
-  const adminPassword = await bcrypt.hash("admin123!", 12);
-  const admin = await prisma.user.upsert({
+  // Create admin user via Better Auth
+  const existingAdmin = await prisma.user.findUnique({
     where: { email: "admin@example.com" },
-    update: {},
-    create: {
-      name: "Admin",
-      email: "admin@example.com",
-      passwordHash: adminPassword,
-      role: "ADMIN",
-    },
   });
-  console.log("Created admin:", admin.email);
+
+  if (!existingAdmin) {
+    const { user } = await auth.api.signUpEmail({
+      body: {
+        name: "Admin",
+        email: "admin@example.com",
+        password: "admin123!",
+      },
+    });
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { role: "ADMIN", emailVerified: true },
+    });
+    console.log("Created admin:", user.email);
+  } else {
+    console.log("Admin already exists:", existingAdmin.email);
+  }
 
   // Seed knowledge base
   const entries = [

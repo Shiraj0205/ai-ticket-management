@@ -9,7 +9,12 @@
       "Bash(export PATH=\"$HOME/.bun/bin:$PATH\")",
       "Bash(bunx prisma:*)",
       "Bash(echo \"Client PID: $!\")",
-      "Bash(echo \"Server PID: $!\")"
+      "Bash(echo \"Server PID: $!\")",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__query-docs",
+      "Bash(export PATH=\"/c/Users/iss_s/.bun/bin:$PATH\")",
+      "Bash(curl -s http://localhost:3001/api/health)",
+      "Bash(curl:*)"
     ]
   }
 }

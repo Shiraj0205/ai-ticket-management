@@ -1,12 +1,6 @@
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  type ReactNode,
-} from "react";
+import { createContext, useContext, type ReactNode } from "react";
 import type { User } from "../types/index.js";
-import { api } from "../lib/api.js";
+import { authClient } from "../lib/auth-client.js";
 
 interface AuthContextValue {
   user: User | null;
@@ -18,29 +12,37 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: session, isPending } = authClient.useSession();
 
-  useEffect(() => {
-    api
-      .get<User>("/auth/me")
-      .then(setUser)
-      .catch(() => setUser(null))
-      .finally(() => setLoading(false));
-  }, []);
+  type SessionUser = NonNullable<typeof session>["user"] & { role?: string };
+  const sessionUser = session?.user as SessionUser | undefined;
+
+  const user: User | null = sessionUser
+    ? {
+        id: sessionUser.id,
+        name: sessionUser.name,
+        email: sessionUser.email,
+        role: (sessionUser.role ?? "AGENT") as User["role"],
+        createdAt:
+          sessionUser.createdAt instanceof Date
+            ? sessionUser.createdAt.toISOString()
+            : String(sessionUser.createdAt),
+      }
+    : null;
 
   async function login(email: string, password: string) {
-    const u = await api.post<User>("/auth/login", { email, password });
-    setUser(u);
+    const result = await authClient.signIn.email({ email, password });
+    if (result.error) {
+      throw new Error(result.error.message ?? "Login failed");
+    }
   }
 
   async function logout() {
-    await api.post("/auth/logout");
-    setUser(null);
+    await authClient.signOut();
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading: isPending, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

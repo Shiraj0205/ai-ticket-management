@@ -1,7 +1,7 @@
 import { Router } from "express";
-import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
+import { auth } from "../lib/auth.js";
 import { requireAdmin } from "../middleware/auth.js";
 
 export const usersRouter = Router();
@@ -43,9 +43,20 @@ usersRouter.post("/", async (req, res) => {
     return;
   }
 
-  const passwordHash = await bcrypt.hash(password, 12);
-  const user = await prisma.user.create({
-    data: { name, email, passwordHash, role: "AGENT" },
+  // Create user via Better Auth so credentials are stored correctly
+  const signUpResult = await auth.api.signUpEmail({
+    body: { name, email, password },
+  });
+
+  // Mark email as verified (admin-created users skip verification)
+  // and ensure role defaults to AGENT
+  await prisma.user.update({
+    where: { id: signUpResult.user.id },
+    data: { emailVerified: true },
+  });
+
+  const user = await prisma.user.findUnique({
+    where: { id: signUpResult.user.id },
     select: { id: true, name: true, email: true, role: true, createdAt: true },
   });
 
@@ -60,10 +71,27 @@ usersRouter.patch("/:id", async (req, res) => {
   }
 
   const { name, email, password } = result.data;
+
+  if (password) {
+    // Update the credential Account's password via Better Auth context
+    const account = await prisma.account.findFirst({
+      where: { userId: req.params.id, providerId: "credential" },
+    });
+    if (!account) {
+      res.status(404).json({ error: "User credential account not found" });
+      return;
+    }
+    const ctx = await auth.$context;
+    const hashed = await ctx.password.hash(password);
+    await prisma.account.update({
+      where: { id: account.id },
+      data: { password: hashed },
+    });
+  }
+
   const updateData: Record<string, unknown> = {};
   if (name) updateData.name = name;
   if (email) updateData.email = email;
-  if (password) updateData.passwordHash = await bcrypt.hash(password, 12);
 
   try {
     const user = await prisma.user.update({
