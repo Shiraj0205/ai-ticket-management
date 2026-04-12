@@ -1,30 +1,57 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Role } from "@prisma/client";
 import { auth } from "../lib/auth.js";
+
+enum AuthProvider {
+  Credential = "credential",
+}
 
 const prisma = new PrismaClient();
 
-async function main() {
-  // Create admin user via Better Auth
-  const existingAdmin = await prisma.user.findUnique({
-    where: { email: "admin@example.com" },
+async function createUser(
+  name: string,
+  email: string,
+  password: string,
+  role: Role
+) {
+  const existing = await prisma.user.findUnique({ where: { email } });
+  if (existing) {
+    console.log(`${role} already exists:`, email);
+    return;
+  }
+
+  const ctx = await auth.$context;
+  const hashedPassword = await ctx.password.hash(password);
+  const id = crypto.randomUUID();
+
+  await prisma.user.create({
+    data: { id, name, email, role, emailVerified: true },
   });
 
-  if (!existingAdmin) {
-    const { user } = await auth.api.signUpEmail({
-      body: {
-        name: "Admin",
-        email: "admin@example.com",
-        password: "admin123!",
-      },
-    });
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { role: "ADMIN", emailVerified: true },
-    });
-    console.log("Created admin:", user.email);
-  } else {
-    console.log("Admin already exists:", existingAdmin.email);
+  await prisma.account.create({
+    data: {
+      id: crypto.randomUUID(),
+      accountId: id,
+      providerId: AuthProvider.Credential,
+      userId: id,
+      password: hashedPassword,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+  });
+
+  console.log(`Created ${role.toLowerCase()}:`, email);
+}
+
+async function main() {
+  const adminEmail = process.env.SEED_ADMIN_EMAIL;
+  const adminPassword = process.env.SEED_ADMIN_PASSWORD;
+
+  if (!adminEmail || !adminPassword) {
+    throw new Error("SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD must be set in .env");
   }
+
+  await createUser("Admin", adminEmail, adminPassword, Role.ADMIN);
+  await createUser("Agent", "agent@example.com", "agent123!", Role.AGENT);
 
   // Seed knowledge base
   const entries = [
