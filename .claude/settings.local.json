@@ -14,7 +14,10 @@
       "mcp__context7__query-docs",
       "Bash(export PATH=\"/c/Users/iss_s/.bun/bin:$PATH\")",
       "Bash(curl -s http://localhost:3001/api/health)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(npm install:*)",
+      "Bash(npm --version)",
+      "Bash(cmd:*)"
     ]
   }
 }
