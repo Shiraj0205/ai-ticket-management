@@ -17,7 +17,8 @@
       "Bash(curl:*)",
       "Bash(npm install:*)",
       "Bash(npm --version)",
-      "Bash(cmd:*)"
+      "Bash(cmd:*)",
+      "Bash(C:/Users/iss_s/.bun/bin/bun.exe:*)"
     ]
   }
 }
