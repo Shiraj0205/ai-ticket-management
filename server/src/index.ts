@@ -17,16 +17,18 @@ app.use(
   })
 );
 
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: "Too many attempts, please try again later." },
-});
+if (process.env.NODE_ENV === "production") {
+  const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many attempts, please try again later." },
+  });
 
-app.use("/api/auth/sign-in", authLimiter);
-app.use("/api/auth/forget-password", authLimiter);
+  app.use("/api/auth/sign-in", authLimiter);
+  app.use("/api/auth/forget-password", authLimiter);
+}
 
 // Better Auth handler must come before express.json()
 app.all("/api/auth/*", toNodeHandler(auth));

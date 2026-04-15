@@ -19,7 +19,15 @@
       "Bash(npm --version)",
       "Bash(cmd:*)",
       "Bash(C:/Users/iss_s/.bun/bin/bun.exe:*)",
-      "Bash(/c/Users/iss_s/.bun/bin/bun add *)"
+      "Bash(/c/Users/iss_s/.bun/bin/bun add *)",
+      "Bash(/c/Users/iss_s/.bun/bin/bun.exe add *)",
+      "Bash(/c/Program Files/PostgreSQL/18/bin/psql.exe *)",
+      "Bash(PGPASSWORD=\"Cottontop@946\" \"/c/Program Files/PostgreSQL/18/bin/psql.exe\" -U postgres -c \"SELECT 1\")",
+      "Bash(echo \"exit: $?\")",
+      "Bash(PGPASSWORD=\"Cottontop@946\" \"/c/Program Files/PostgreSQL/18/bin/psql.exe\" -U postgres -c \"CREATE DATABASE helpdesk_test;\")",
+      "Bash(DATABASE_URL=\"postgresql://postgres:Cottontop@946@localhost:5432/helpdesk_test\" /c/Users/iss_s/.bun/bin/bun.exe x prisma migrate deploy)",
+      "Bash(/c/Users/iss_s/.bun/bin/bun.exe x *)",
+      "Bash(/c/Users/iss_s/.bun/bin/bun.exe --env-file=.env.test src/prisma/seed.ts)"
     ]
   }
 }

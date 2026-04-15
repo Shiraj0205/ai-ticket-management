@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:test": "vite --config vite.config.test.ts",
     "build": "tsc -b && vite build",
     "lint": "tsc --noEmit",
     "preview": "vite preview"
