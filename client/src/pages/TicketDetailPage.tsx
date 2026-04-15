@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { api } from "../lib/api.js";
-import type { Ticket, User, TicketStatus } from "../types/index.js";
+import type { Ticket, TicketStatus } from "../types/index.js";
+
+type AgentOption = { id: string; name: string };
 
 const STATUS_OPTIONS: TicketStatus[] = ["OPEN", "RESOLVED", "CLOSED"];
 
@@ -9,7 +11,7 @@ export default function TicketDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [ticket, setTicket] = useState<Ticket | null>(null);
-  const [agents, setAgents] = useState<User[]>([]);
+  const [agents, setAgents] = useState<AgentOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [aiLoading, setAiLoading] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -18,7 +20,7 @@ export default function TicketDetailPage() {
     if (!id) return;
     Promise.all([
       api.get<Ticket>(`/tickets/${id}`),
-      api.get<User[]>("/users"),
+      api.get<AgentOption[]>("/tickets/agents"),
     ])
       .then(([t, u]) => {
         setTicket(t);

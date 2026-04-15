@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import rateLimit from "express-rate-limit";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "./lib/auth.js";
 import { usersRouter } from "./routes/users.js";
@@ -15,6 +16,17 @@ app.use(
     credentials: true,
   })
 );
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many attempts, please try again later." },
+});
+
+app.use("/api/auth/sign-in", authLimiter);
+app.use("/api/auth/forget-password", authLimiter);
 
 // Better Auth handler must come before express.json()
 app.all("/api/auth/*", toNodeHandler(auth));

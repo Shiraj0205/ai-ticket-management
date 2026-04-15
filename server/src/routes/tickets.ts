@@ -14,14 +14,17 @@ const createTicketSchema = z.object({
   fromName: z.string().optional(),
 });
 
-const updateTicketSchema = z.object({
+// Fields any authenticated agent can update
+const agentUpdateSchema = z.object({
   status: z.enum(["OPEN", "RESOLVED", "CLOSED"]).optional(),
+});
+
+// Additional fields restricted to admins
+const adminUpdateSchema = agentUpdateSchema.extend({
   category: z
     .enum(["GENERAL_QUESTION", "TECHNICAL_QUESTION", "REFUND_REQUEST"])
     .optional(),
   assignedAgentId: z.string().nullable().optional(),
-  aiSummary: z.string().nullable().optional(),
-  aiSuggestedReply: z.string().nullable().optional(),
 });
 
 const listTicketsSchema = z.object({
@@ -33,6 +36,15 @@ const listTicketsSchema = z.object({
   sortOrder: z.enum(["asc", "desc"]).optional().default("desc"),
   page: z.coerce.number().int().positive().optional().default(1),
   pageSize: z.coerce.number().int().positive().max(100).optional().default(20),
+});
+
+ticketsRouter.get("/agents", async (_req, res) => {
+  const agents = await prisma.user.findMany({
+    where: { role: { in: ["AGENT", "ADMIN"] } },
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
+  res.json(agents);
 });
 
 ticketsRouter.get("/", async (req, res) => {
@@ -106,7 +118,9 @@ ticketsRouter.post("/", async (req, res) => {
 });
 
 ticketsRouter.patch("/:id", async (req, res) => {
-  const result = updateTicketSchema.safeParse(req.body);
+  const isAdmin = req.authUser?.role === "ADMIN";
+  const schema = isAdmin ? adminUpdateSchema : agentUpdateSchema;
+  const result = schema.safeParse(req.body);
   if (!result.success) {
     res.status(400).json({ error: result.error.flatten() });
     return;

@@ -2,9 +2,17 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "./prisma.js";
 
+const secret = process.env.BETTER_AUTH_SECRET;
+if (!secret || secret.length < 32) {
+  throw new Error(
+    "BETTER_AUTH_SECRET must be set to a random string of at least 32 characters. " +
+    "Generate one with: node -e \"require('crypto').randomBytes(32).toString('base64')\""
+  );
+}
+
 export const auth = betterAuth({
   database: prismaAdapter(prisma, { provider: "postgresql" }),
-  secret: process.env.BETTER_AUTH_SECRET ?? "change-me-in-production",
+  secret,
   baseURL: process.env.BETTER_AUTH_URL ?? "http://localhost:5173",
   emailAndPassword: {
     enabled: true,
