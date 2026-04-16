@@ -39,6 +39,19 @@ Use context7 even for well-known libraries — training data may not reflect the
 /server     — Express backend
 ```
 
+## Testing
+
+### E2E Tests (Playwright)
+
+Always use the **`playwright-e2e-writer` agent** when writing end-to-end tests. Invoke it via the Agent tool with `subagent_type: "playwright-e2e-writer"`.
+
+Use this agent for:
+- Writing new E2E tests for completed features
+- Expanding test coverage for existing user flows
+- Creating test suites for critical paths (auth, ticket creation, dashboard, etc.)
+
+The test environment uses isolated ports (5174 for client, 3002 for server) and a separate test database (`helpdesk_test`). See `playwright.config.ts` and `e2e/global-setup.ts` for configuration details.
+
 ## Implementation Plan
 
 See `implementaion-plan.md` for the full phase-by-phase plan (Phases 1–8).

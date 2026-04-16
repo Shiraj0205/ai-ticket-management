@@ -27,7 +27,8 @@
       "Bash(PGPASSWORD=\"Cottontop@946\" \"/c/Program Files/PostgreSQL/18/bin/psql.exe\" -U postgres -c \"CREATE DATABASE helpdesk_test;\")",
       "Bash(DATABASE_URL=\"postgresql://postgres:Cottontop@946@localhost:5432/helpdesk_test\" /c/Users/iss_s/.bun/bin/bun.exe x prisma migrate deploy)",
       "Bash(/c/Users/iss_s/.bun/bin/bun.exe x *)",
-      "Bash(/c/Users/iss_s/.bun/bin/bun.exe --env-file=.env.test src/prisma/seed.ts)"
+      "Bash(/c/Users/iss_s/.bun/bin/bun.exe --env-file=.env.test src/prisma/seed.ts)",
+      "mcp__ide__getDiagnostics"
     ]
   }
 }
