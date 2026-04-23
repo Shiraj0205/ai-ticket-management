@@ -1,4 +1,12 @@
 import { defineConfig, devices } from "@playwright/test";
+import { resolve } from "path";
+
+const BUN_EXE = resolve(
+  process.env.HOME ?? process.env.USERPROFILE ?? "",
+  ".bun",
+  "bin",
+  process.platform === "win32" ? "bun.exe" : "bun"
+);
 
 export default defineConfig({
   testDir: "./e2e",
@@ -25,7 +33,7 @@ export default defineConfig({
   webServer: [
     {
       // API server using the test database (port 3002)
-      command: "bun --env-file=.env.test src/index.ts",
+      command: `${BUN_EXE} --env-file=.env.test src/index.ts`,
       cwd: "./server",
       url: "http://localhost:3002/api/health",
       reuseExistingServer: !process.env.CI,
@@ -34,7 +42,7 @@ export default defineConfig({
     },
     {
       // Vite dev server proxying to the test API (port 5174)
-      command: "bun run dev:test",
+      command: `${BUN_EXE} run dev:test`,
       cwd: "./client",
       url: "http://localhost:5174",
       reuseExistingServer: !process.env.CI,

@@ -23,12 +23,19 @@ function loadEnvFile(filePath: string): Record<string, string> {
   return env;
 }
 
+const BUN_EXE = resolve(
+  process.env.HOME ?? process.env.USERPROFILE ?? "",
+  ".bun",
+  "bin",
+  process.platform === "win32" ? "bun.exe" : "bun"
+);
+
 export default async function globalTeardown() {
   const serverDir = resolve(__dirname, "../server");
   const testEnv = loadEnvFile(resolve(serverDir, ".env.test"));
 
   console.log("\n[global-teardown] Resetting test database…");
-  execSync("bunx prisma migrate reset --force --skip-seed", {
+  execSync(`${BUN_EXE} x prisma migrate reset --force --skip-seed`, {
     cwd: serverDir,
     env: { ...process.env, ...testEnv },
     stdio: "inherit",

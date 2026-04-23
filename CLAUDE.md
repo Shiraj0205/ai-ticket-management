@@ -6,7 +6,7 @@ An AI-powered ticket management system built as a monorepo with `/client` (React
 
 ## Tech Stack
 
-- **Frontend**: React + TypeScript, Tailwind CSS, React Router
+- **Frontend**: React + TypeScript, Tailwind CSS, React Router, TanStack Query, Axios
 - **Backend**: Node.js + Express + TypeScript, session-based auth
 - **Database**: PostgreSQL via Prisma ORM
 - **AI**: Claude API (Anthropic) — ticket classification, summaries, suggested replies
@@ -31,6 +31,17 @@ Use context7 even for well-known libraries — training data may not reflect the
 
 1. Resolve the library ID: `mcp__context7__resolve-library-id` with the library name
 2. Fetch the docs: `mcp__context7__query-docs` with the resolved ID and a focused topic query
+
+## Data Fetching
+
+Always use **TanStack Query (`@tanstack/react-query`)** for all server state in the frontend:
+
+- Use `useQuery` for fetching data (replaces `useEffect` + `useState` for loading/error)
+- Use `useMutation` for create, update, and delete operations
+- Update the cache directly with `queryClient.setQueryData` on mutation success — avoid unnecessary refetches
+- The `QueryClientProvider` is set up in `main.tsx`
+
+Do not manage server state with plain `useState` + `useEffect`.
 
 ## Project Structure
 

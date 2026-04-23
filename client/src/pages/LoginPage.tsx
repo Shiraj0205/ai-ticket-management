@@ -92,12 +92,13 @@ export default function LoginPage() {
             <p className="text-gray-500 mt-1">Sign in to your account to continue</p>
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1.5">
                 Email address
               </label>
               <input
+                id="email"
                 type="email"
                 {...register("email")}
                 placeholder="you@company.com"
@@ -111,7 +112,7 @@ export default function LoginPage() {
 
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-sm font-medium text-gray-700">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                   Password
                 </label>
                 <a
@@ -123,6 +124,7 @@ export default function LoginPage() {
               </div>
               <div className="relative">
                 <input
+                  id="password"
                   type={showPassword ? "text" : "password"}
                   {...register("password")}
                   placeholder="••••••••"

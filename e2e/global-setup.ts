@@ -23,15 +23,29 @@ function loadEnvFile(filePath: string): Record<string, string> {
   return env;
 }
 
+// Resolve the bun executable path — on Windows there is only bun.exe (no bunx.exe).
+// Using the full path avoids PATH lookup issues in child processes.
+const BUN_EXE = resolve(
+  process.env.HOME ?? process.env.USERPROFILE ?? "",
+  ".bun",
+  "bin",
+  process.platform === "win32" ? "bun.exe" : "bun"
+);
+
+function execBun(args: string, opts: Parameters<typeof execSync>[1]) {
+  return execSync(`${BUN_EXE} ${args}`, opts);
+}
+
 export default async function globalSetup() {
   const serverDir = resolve(__dirname, "../server");
   const testEnv = loadEnvFile(resolve(serverDir, ".env.test"));
+  const childEnv = { ...process.env, ...testEnv };
 
   console.log("\n[global-setup] Running Prisma migrations on test database…");
-  execSync("bunx prisma migrate deploy", {
-    cwd: serverDir,
-    env: { ...process.env, ...testEnv },
-    stdio: "inherit",
-  });
+  execBun("x prisma migrate deploy", { cwd: serverDir, env: childEnv, stdio: "inherit" });
   console.log("[global-setup] Migrations complete.\n");
+
+  console.log("[global-setup] Seeding test database…");
+  execBun("src/prisma/seed.ts", { cwd: serverDir, env: childEnv, stdio: "inherit" });
+  console.log("[global-setup] Seed complete.\n");
 }

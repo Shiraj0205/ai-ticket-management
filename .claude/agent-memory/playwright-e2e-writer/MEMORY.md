@@ -1,0 +1,2 @@
+- [Auth testing patterns](project_auth_testing.md) — sign-up disabled, seeded users, API helper pattern for user creation
+- [E2E test infrastructure](project_test_infrastructure.md) — file locations, POM structure, selector patterns, API base URL

@@ -18,6 +18,7 @@ const updateUserSchema = z.object({
   name: z.string().min(1).optional(),
   email: z.string().email().optional(),
   password: z.string().min(8).optional(),
+  role: z.enum(["ADMIN", "AGENT"]).optional(),
 });
 
 usersRouter.get("/", async (_req, res) => {
@@ -70,10 +71,9 @@ usersRouter.patch("/:id", async (req, res) => {
     return;
   }
 
-  const { name, email, password } = result.data;
+  const { name, email, password, role } = result.data;
 
   if (password) {
-    // Update the credential Account's password via Better Auth context
     const account = await prisma.account.findFirst({
       where: { userId: req.params.id, providerId: "credential" },
     });
@@ -92,6 +92,7 @@ usersRouter.patch("/:id", async (req, res) => {
   const updateData: Record<string, unknown> = {};
   if (name) updateData.name = name;
   if (email) updateData.email = email;
+  if (role) updateData.role = role;
 
   try {
     const user = await prisma.user.update({

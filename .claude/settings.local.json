@@ -28,7 +28,15 @@
       "Bash(DATABASE_URL=\"postgresql://postgres:Cottontop@946@localhost:5432/helpdesk_test\" /c/Users/iss_s/.bun/bin/bun.exe x prisma migrate deploy)",
       "Bash(/c/Users/iss_s/.bun/bin/bun.exe x *)",
       "Bash(/c/Users/iss_s/.bun/bin/bun.exe --env-file=.env.test src/prisma/seed.ts)",
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(k,':',v\\) for k,v in d.get\\('scripts',{}\\).items\\(\\)]\")",
+      "Bash(npx playwright *)",
+      "Bash(node *)",
+      "Bash(npx prisma *)",
+      "Bash(xargs grep *)",
+      "Bash(node_modules/.bin/tsc --noEmit)",
+      "Bash(npm run *)",
+      "Bash(/c/Users/iss_s/.bun/bin/bun --watch src/index.ts)"
     ]
   }
 }
