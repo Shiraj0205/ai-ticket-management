@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../lib/api.js";
+import { Skeleton } from "../components/ui/skeleton.js";
 import type { PaginatedTickets, TicketStatus } from "../types/index.js";
 
 const STATUSES: TicketStatus[] = ["OPEN", "RESOLVED", "CLOSED"];
@@ -41,7 +42,35 @@ export default function DashboardPage() {
     void load();
   }, []);
 
-  if (loading) return <p className="text-gray-500">Loading...</p>;
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <Skeleton className="h-8 w-36" />
+        <div className="grid grid-cols-3 gap-4">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="bg-white rounded-lg border border-gray-200 p-5 space-y-3">
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-9 w-12" />
+            </div>
+          ))}
+        </div>
+        <div>
+          <Skeleton className="h-5 w-32 mb-3" />
+          <div className="bg-white rounded-lg border border-gray-200 divide-y divide-gray-100">
+            {[0, 1, 2, 3, 4].map((i) => (
+              <div key={i} className="flex items-center justify-between px-5 py-3">
+                <div className="space-y-1.5">
+                  <Skeleton className="h-4 w-48" />
+                  <Skeleton className="h-3 w-32" />
+                </div>
+                <Skeleton className="h-5 w-16 rounded-full" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api.js";
 import { useAuth } from "../context/AuthContext.js";
+import { Skeleton } from "../components/ui/skeleton.js";
 import type { User, Role } from "../types/index.js";
 
 interface CreateForm {
@@ -276,7 +277,33 @@ export default function UsersPage() {
 
       <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
         {isLoading ? (
-          <div className="p-8 text-center text-sm text-gray-400">Loading users...</div>
+          <table className="min-w-full divide-y divide-gray-100">
+            <thead className="bg-gray-50">
+              <tr>
+                {["Name", "Email", "Role", "Joined", ""].map((h) => (
+                  <th key={h} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <tr key={i}>
+                  <td className="px-5 py-3">
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="w-7 h-7 rounded-full shrink-0" />
+                      <Skeleton className="h-4 w-28" />
+                    </div>
+                  </td>
+                  <td className="px-5 py-3"><Skeleton className="h-4 w-40" /></td>
+                  <td className="px-5 py-3"><Skeleton className="h-5 w-16 rounded-full" /></td>
+                  <td className="px-5 py-3"><Skeleton className="h-4 w-20" /></td>
+                  <td className="px-5 py-3"><Skeleton className="h-4 w-16 ml-auto" /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         ) : users.length === 0 ? (
           <div className="p-8 text-center text-sm text-gray-400">No users found.</div>
         ) : (

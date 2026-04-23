@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { api } from "../lib/api.js";
+import { Skeleton } from "../components/ui/skeleton.js";
 import type { Ticket, TicketStatus } from "../types/index.js";
 
 type AgentOption = { id: string; name: string };
@@ -55,7 +56,43 @@ export default function TicketDetailPage() {
     }
   }
 
-  if (loading) return <p className="text-gray-400">Loading...</p>;
+  if (loading) {
+    return (
+      <div className="max-w-3xl space-y-6">
+        <Skeleton className="h-4 w-28" />
+        <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
+          <Skeleton className="h-6 w-2/3" />
+          <div className="space-y-1.5">
+            <Skeleton className="h-4 w-56" />
+            <Skeleton className="h-4 w-40" />
+          </div>
+          <div className="border-t pt-4 space-y-2">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-3/4" />
+          </div>
+        </div>
+        <div className="bg-white rounded-lg border border-gray-200 p-6 grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Skeleton className="h-3 w-12" />
+            <Skeleton className="h-9 w-full rounded-md" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-9 w-full rounded-md" />
+          </div>
+        </div>
+        <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
+          <Skeleton className="h-4 w-20" />
+          <div className="flex gap-2">
+            <Skeleton className="h-8 w-28 rounded-md" />
+            <Skeleton className="h-8 w-24 rounded-md" />
+            <Skeleton className="h-8 w-28 rounded-md" />
+          </div>
+        </div>
+      </div>
+    );
+  }
   if (!ticket) return null;
 
   return (

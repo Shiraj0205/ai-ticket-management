@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { api } from "../lib/api.js";
+import { Skeleton } from "../components/ui/skeleton.js";
 import type { PaginatedTickets, TicketStatus, TicketCategory } from "../types/index.js";
 
 const STATUS_COLORS: Record<TicketStatus, string> = {
@@ -79,7 +80,29 @@ export default function TicketsPage() {
       {/* Table */}
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         {loading ? (
-          <p className="p-6 text-gray-400">Loading...</p>
+          <table className="min-w-full divide-y divide-gray-100">
+            <thead className="bg-gray-50">
+              <tr>
+                {["Subject", "From", "Status", "Category", "Assigned", "Created"].map((h) => (
+                  <th key={h} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <tr key={i}>
+                  <td className="px-5 py-3"><Skeleton className="h-4 w-48" /></td>
+                  <td className="px-5 py-3"><Skeleton className="h-4 w-36" /></td>
+                  <td className="px-5 py-3"><Skeleton className="h-5 w-16 rounded-full" /></td>
+                  <td className="px-5 py-3"><Skeleton className="h-4 w-20" /></td>
+                  <td className="px-5 py-3"><Skeleton className="h-4 w-24" /></td>
+                  <td className="px-5 py-3"><Skeleton className="h-4 w-20" /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         ) : (
           <table className="min-w-full divide-y divide-gray-100">
             <thead className="bg-gray-50">
