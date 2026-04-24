@@ -23,6 +23,7 @@ const updateUserSchema = z.object({
 
 usersRouter.get("/", async (_req, res) => {
   const users = await prisma.user.findMany({
+    where: { deletedAt: null },
     select: { id: true, name: true, email: true, role: true, createdAt: true },
     orderBy: { createdAt: "desc" },
   });
@@ -38,7 +39,7 @@ usersRouter.post("/", async (req, res) => {
 
   const { name, email, password } = result.data;
 
-  const existing = await prisma.user.findUnique({ where: { email } });
+  const existing = await prisma.user.findFirst({ where: { email, deletedAt: null } });
   if (existing) {
     res.status(409).json({ error: "Email already in use" });
     return;
@@ -113,7 +114,10 @@ usersRouter.patch("/:id", async (req, res) => {
 
 usersRouter.delete("/:id", async (req, res) => {
   try {
-    await prisma.user.delete({ where: { id: req.params.id } });
+    await prisma.user.update({
+      where: { id: req.params.id, deletedAt: null },
+      data: { deletedAt: new Date() },
+    });
     res.json({ message: "User deleted" });
   } catch {
     res.status(404).json({ error: "User not found" });

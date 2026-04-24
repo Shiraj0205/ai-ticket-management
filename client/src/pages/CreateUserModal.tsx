@@ -54,7 +54,7 @@ export function CreateUserModal({ onClose }: { onClose: () => void }) {
               type="text"
               {...register("name")}
               autoComplete="off"
-              className="w-full border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className={`w-full border rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:border-transparent ${errors.name ? "border-red-400 focus:ring-red-400" : "border-gray-300 focus:ring-blue-500"}`}
             />
             {errors.name && (
               <p className="text-xs text-red-500 mt-1">{errors.name.message}</p>
@@ -67,7 +67,7 @@ export function CreateUserModal({ onClose }: { onClose: () => void }) {
               type="email"
               {...register("email")}
               autoComplete="off"
-              className="w-full border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className={`w-full border rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:border-transparent ${errors.email ? "border-red-400 focus:ring-red-400" : "border-gray-300 focus:ring-blue-500"}`}
             />
             {errors.email && (
               <p className="text-xs text-red-500 mt-1">{errors.email.message}</p>
@@ -80,7 +80,7 @@ export function CreateUserModal({ onClose }: { onClose: () => void }) {
               type="password"
               {...register("password")}
               autoComplete="new-password"
-              className="w-full border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className={`w-full border rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:border-transparent ${errors.password ? "border-red-400 focus:ring-red-400" : "border-gray-300 focus:ring-blue-500"}`}
             />
             {errors.password && (
               <p className="text-xs text-red-500 mt-1">{errors.password.message}</p>
