@@ -32,6 +32,17 @@ Use context7 even for well-known libraries — training data may not reflect the
 1. Resolve the library ID: `mcp__context7__resolve-library-id` with the library name
 2. Fetch the docs: `mcp__context7__query-docs` with the resolved ID and a focused topic query
 
+## Forms
+
+Always use **React Hook Form (`react-hook-form`)** with **Zod (`zod`)** for all forms in the frontend:
+
+- Define a Zod schema for validation: `z.object({ ... })`
+- Infer the form type: `type FormData = z.infer<typeof schema>`
+- Pass the resolver: `useForm<FormData>({ resolver: zodResolver(schema) })`
+- Spread `register` onto inputs and display `errors.<field>.message` inline
+
+Do not use plain `useState` + manual validation for form state.
+
 ## Data Fetching
 
 Always use **TanStack Query (`@tanstack/react-query`)** for all server state in the frontend:
