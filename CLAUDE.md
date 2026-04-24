@@ -52,6 +52,51 @@ Do not manage server state with plain `useState` + `useEffect`.
 
 ## Testing
 
+### Component Tests (Vitest + React Testing Library)
+
+Component tests live alongside the source file they test: `src/pages/Foo.tsx` → `src/pages/Foo.test.tsx`.
+
+**Running tests:**
+```bash
+cd client
+bun run test          # single run
+bun run test:watch    # watch mode
+```
+
+**Stack:** Vitest · `@testing-library/react` · `@testing-library/user-event` · `@testing-library/jest-dom` · jsdom  
+Config: `client/vitest.config.ts` — jsdom environment, global APIs enabled, setup file at `src/test/setup.ts`.
+
+**What to test:**
+- Loading/skeleton state
+- Empty state
+- Rendered data (names, emails, badges, counts)
+- User interactions: opening modals, submitting forms, cancelling
+- Optimistic cache updates after mutations
+- Error banners when queries or mutations reject
+
+**How to write tests:**
+
+1. Mock `../lib/api.js` with `vi.mock` and cast to `ReturnType<typeof vi.fn>` for type-safe `.mockResolvedValue`.
+2. Mock `../context/AuthContext.js` with `vi.mock` + `mockReturnValue` to control the current user.
+3. Wrap renders in a fresh `QueryClient` (set `retry: false`) inside `QueryClientProvider`.
+4. Prefer queries in this order: `getByRole` → `getByText` → `getByDisplayValue`. Avoid `getByTestId`.
+5. When component labels lack `htmlFor`, query inputs by role/order (`getAllByRole("textbox")[n]`) or `getByDisplayValue`.
+6. Use `within(row)` to scope queries to a specific table row.
+7. Call `vi.clearAllMocks()` in `beforeEach`.
+
+**Example helper pattern:**
+```ts
+function renderPage(currentUser: User | null = ADMIN) {
+  mockUseAuth.mockReturnValue({ user: currentUser, loading: false, login: vi.fn(), logout: vi.fn() });
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <PageComponent />
+    </QueryClientProvider>
+  );
+}
+```
+
 ### E2E Tests (Playwright)
 
 Always use the **`playwright-e2e-writer` agent** when writing end-to-end tests. Invoke it via the Agent tool with `subagent_type: "playwright-e2e-writer"`.
