@@ -9,15 +9,15 @@ export const usersRouter = Router();
 usersRouter.use(requireAdmin);
 
 const createUserSchema = z.object({
-  name: z.string().min(1),
-  email: z.string().email(),
+  name: z.string().trim().min(3, "Name must be at least 3 characters"),
+  email: z.string().email("Invalid email address"),
   password: z.string().min(8),
 });
 
 const updateUserSchema = z.object({
-  name: z.string().min(1).optional(),
-  email: z.string().email().optional(),
-  password: z.string().min(8).optional(),
+  name: z.string().trim().min(3, "Name must be at least 3 characters").optional(),
+  email: z.string().email("Invalid email address").optional(),
+  password: z.string().min(8, "Password must be at least 8 characters").optional(),
   role: z.enum(["ADMIN", "AGENT"]).optional(),
 });
 
@@ -44,21 +44,26 @@ usersRouter.post("/", async (req, res) => {
     return;
   }
 
-  // Create user via Better Auth so credentials are stored correctly
-  const signUpResult = await auth.api.signUpEmail({
-    body: { name, email, password },
-  });
+  const ctx = await auth.$context;
+  const hashed = await ctx.password.hash(password);
+  const id = crypto.randomUUID();
+  const now = new Date();
 
-  // Mark email as verified (admin-created users skip verification)
-  // and ensure role defaults to AGENT
-  await prisma.user.update({
-    where: { id: signUpResult.user.id },
-    data: { emailVerified: true },
-  });
-
-  const user = await prisma.user.findUnique({
-    where: { id: signUpResult.user.id },
+  const user = await prisma.user.create({
+    data: { id, name, email, emailVerified: true, createdAt: now, updatedAt: now },
     select: { id: true, name: true, email: true, role: true, createdAt: true },
+  });
+
+  await prisma.account.create({
+    data: {
+      id: crypto.randomUUID(),
+      accountId: user.id,
+      providerId: "credential",
+      userId: user.id,
+      password: hashed,
+      createdAt: now,
+      updatedAt: now,
+    },
   });
 
   res.status(201).json(user);

@@ -1,15 +1,20 @@
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "../lib/api.js";
 import { useAuth } from "../context/AuthContext.js";
+import { usersApi } from "../lib/users.js";
 import { Skeleton } from "../components/ui/skeleton.js";
 import type { User, Role } from "../types/index.js";
 
-interface CreateForm {
-  name: string;
-  email: string;
-  password: string;
-}
+const createUserSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Enter a valid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+});
+
+type CreateForm = z.infer<typeof createUserSchema>;
 
 interface EditForm {
   name: string;
@@ -38,10 +43,14 @@ function CreateUserModal({
   onClose: () => void;
 }) {
   const queryClient = useQueryClient();
-  const [form, setForm] = useState<CreateForm>({ name: "", email: "", password: "" });
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<CreateForm>({ resolver: zodResolver(createUserSchema) });
 
   const { mutate, isPending, error } = useMutation({
-    mutationFn: (data: CreateForm) => api.post<User>("/users", data),
+    mutationFn: (data: CreateForm) => usersApi.create(data),
     onSuccess: (newUser) => {
       queryClient.setQueryData<User[]>(["users"], (prev = []) => [newUser, ...prev]);
       onClose();
@@ -66,21 +75,45 @@ function CreateUserModal({
           </p>
         )}
 
-        <form onSubmit={(e) => { e.preventDefault(); mutate(form); }} className="space-y-4">
-          {(["name", "email", "password"] as const).map((field) => (
-            <div key={field}>
-              <label className="block text-xs font-medium text-gray-500 mb-1 capitalize">
-                {field}
-              </label>
-              <input
-                type={field === "password" ? "password" : field === "email" ? "email" : "text"}
-                value={form[field]}
-                onChange={(e) => setForm((p) => ({ ...p, [field]: e.target.value }))}
-                required
-                className="w-full border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-          ))}
+        <form onSubmit={handleSubmit((data) => mutate(data))} className="space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Name</label>
+            <input
+              type="text"
+              {...register("name")}
+              autoComplete="off"
+              className="w-full border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            {errors.name && (
+              <p className="text-xs text-red-500 mt-1">{errors.name.message}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Email</label>
+            <input
+              type="email"
+              {...register("email")}
+              autoComplete="off"
+              className="w-full border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            {errors.email && (
+              <p className="text-xs text-red-500 mt-1">{errors.email.message}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Password</label>
+            <input
+              type="password"
+              {...register("password")}
+              autoComplete="new-password"
+              className="w-full border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            {errors.password && (
+              <p className="text-xs text-red-500 mt-1">{errors.password.message}</p>
+            )}
+          </div>
 
           <div className="flex gap-3 pt-1">
             <button
@@ -120,7 +153,7 @@ function EditUserModal({
   });
 
   const { mutate, isPending, error } = useMutation({
-    mutationFn: (data: Partial<EditForm>) => api.patch<User>(`/users/${user.id}`, data),
+    mutationFn: (data: Partial<EditForm>) => usersApi.update(user.id, data),
     onSuccess: (updated) => {
       queryClient.setQueryData<User[]>(["users"], (prev = []) =>
         prev.map((u) => (u.id === updated.id ? updated : u))
@@ -232,11 +265,11 @@ export default function UsersPage() {
 
   const { data: users = [], isLoading, error } = useQuery({
     queryKey: ["users"],
-    queryFn: () => api.get<User[]>("/users"),
+    queryFn: () => usersApi.list(),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => api.delete(`/users/${id}`),
+    mutationFn: (id: string) => usersApi.remove(id),
     onSuccess: (_data, id) => {
       queryClient.setQueryData<User[]>(["users"], (prev = []) =>
         prev.filter((u) => u.id !== id)
