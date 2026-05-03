@@ -7,8 +7,8 @@ import {
   createColumnHelper,
   flexRender,
 } from "@tanstack/react-table";
-import type { SortingState } from "@tanstack/react-table";
-import { ChevronUp, ChevronDown, ChevronsUpDown, Search } from "lucide-react";
+import type { SortingState, PaginationState } from "@tanstack/react-table";
+import { ChevronUp, ChevronDown, ChevronsUpDown, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { ticketsApi } from "../lib/tickets.js";
 import type { SortableTicketField } from "../lib/tickets.js";
 import { Skeleton } from "../components/ui/skeleton.js";
@@ -28,12 +28,27 @@ const CATEGORY_LABELS: Record<TicketCategory, string> = {
 
 const columnHelper = createColumnHelper<Ticket>();
 
+const PAGE_SIZE_OPTIONS = [10, 20, 50];
+
+function getPageRange(current: number, total: number): (number | "…")[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const left = Math.max(2, current - 1);
+  const right = Math.min(total - 1, current + 1);
+  const pages: (number | "…")[] = [1];
+  if (left > 2) pages.push("…");
+  for (let i = left; i <= right; i++) pages.push(i);
+  if (right < total - 1) pages.push("…");
+  pages.push(total);
+  return pages;
+}
+
 export default function TicketsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const status = (searchParams.get("status") ?? "") as TicketStatus | "";
   const category = (searchParams.get("category") ?? "") as TicketCategory | "";
   const page = Number(searchParams.get("page") ?? "1");
+  const pageSize = Number(searchParams.get("pageSize") ?? "10");
   const sortBy = (searchParams.get("sortBy") ?? "createdAt") as SortableTicketField;
   const sortOrder = (searchParams.get("sortOrder") ?? "desc") as "asc" | "desc";
   const search = searchParams.get("search") ?? "";
@@ -58,8 +73,8 @@ export default function TicketsPage() {
   }, [search]);
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ["tickets", { status, category, search, page, sortBy, sortOrder }],
-    queryFn: () => ticketsApi.list({ status, category, search, page, sortBy, sortOrder }),
+    queryKey: ["tickets", { status, category, search, page, pageSize, sortBy, sortOrder }],
+    queryFn: () => ticketsApi.list({ status, category, search, page, pageSize, sortBy, sortOrder }),
   });
 
   function setFilter(key: string, value: string) {
@@ -76,6 +91,13 @@ export default function TicketsPage() {
     setSearchParams(next);
   }
 
+  function setPageSize(size: number) {
+    const next = new URLSearchParams(searchParams);
+    next.set("pageSize", String(size));
+    next.delete("page");
+    setSearchParams(next);
+  }
+
   function setSorting(newSortBy: SortableTicketField, newSortOrder: "asc" | "desc") {
     const next = new URLSearchParams(searchParams);
     next.set("sortBy", newSortBy);
@@ -85,6 +107,7 @@ export default function TicketsPage() {
   }
 
   const sorting: SortingState = [{ id: sortBy, desc: sortOrder === "desc" }];
+  const pagination: PaginationState = { pageIndex: page - 1, pageSize };
 
   const columns = useMemo(
     () => [
@@ -149,7 +172,7 @@ export default function TicketsPage() {
   const table = useReactTable({
     data: data?.tickets ?? [],
     columns,
-    state: { sorting },
+    state: { sorting, pagination },
     onSortingChange: (updater) => {
       const newSorting = typeof updater === "function" ? updater(sorting) : updater;
       if (newSorting.length === 0) {
@@ -161,13 +184,17 @@ export default function TicketsPage() {
         );
       }
     },
+    onPaginationChange: (updater) => {
+      const next = typeof updater === "function" ? updater(pagination) : updater;
+      setPage(next.pageIndex + 1);
+    },
     getCoreRowModel: getCoreRowModel(),
     manualSorting: true,
+    manualPagination: true,
+    pageCount: Math.ceil((data?.total ?? 0) / pageSize),
     enableMultiSort: false,
     sortDescFirst: true,
   });
-
-  const totalPages = data ? Math.ceil(data.total / data.pageSize) : 1;
 
   return (
     <div className="space-y-6">
@@ -308,25 +335,64 @@ export default function TicketsPage() {
       </div>
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-end gap-2">
-          <button
-            disabled={page <= 1}
-            onClick={() => setPage(page - 1)}
-            className="px-3 py-1.5 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            Previous
-          </button>
-          <span className="px-3 py-1.5 text-sm text-gray-600">
-            {page} / {totalPages}
-          </span>
-          <button
-            disabled={page >= totalPages}
-            onClick={() => setPage(page + 1)}
-            className="px-3 py-1.5 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            Next
-          </button>
+      {data && (data.total > 0) && (
+        <div className="flex items-center justify-between gap-4">
+          {/* Left: showing info + page size */}
+          <div className="flex items-center gap-3 text-sm text-gray-500">
+            <span>
+              {data.total === 0
+                ? "No results"
+                : `Showing ${(page - 1) * pageSize + 1}–${Math.min(page * pageSize, data.total)} of ${data.total}`}
+            </span>
+            <select
+              value={pageSize}
+              onChange={(e) => setPageSize(Number(e.target.value))}
+              className="border border-gray-300 rounded-md px-2 py-1 text-sm"
+            >
+              {PAGE_SIZE_OPTIONS.map((s) => (
+                <option key={s} value={s}>{s} / page</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Right: page number buttons */}
+          {table.getPageCount() > 1 && (
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
+                className="p-1.5 rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              {getPageRange(page, table.getPageCount()).map((p, i) =>
+                p === "…" ? (
+                  <span key={`ellipsis-${i}`} className="px-2 py-1 text-sm text-gray-400">…</span>
+                ) : (
+                  <button
+                    key={p}
+                    onClick={() => setPage(p)}
+                    className={`min-w-[2rem] px-2 py-1 text-sm rounded-md border transition-colors ${
+                      p === page
+                        ? "bg-blue-600 text-white border-blue-600"
+                        : "border-gray-300 hover:bg-gray-50 text-gray-700"
+                    }`}
+                  >
+                    {p}
+                  </button>
+                )
+              )}
+
+              <button
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
+                className="p-1.5 rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
