@@ -3,6 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
+import { TICKET_CATEGORIES, type TicketCategory } from "../lib/enums.js";
 
 export const aiRouter = Router();
 
@@ -44,14 +45,8 @@ aiRouter.post("/classify", async (req, res) => {
 
   const categoryRaw =
     message.content[0].type === "text" ? message.content[0].text.trim() : "";
-  const validCategories = [
-    "GENERAL_QUESTION",
-    "TECHNICAL_QUESTION",
-    "REFUND_REQUEST",
-  ] as const;
-  type Category = (typeof validCategories)[number];
-  const category = validCategories.includes(categoryRaw as Category)
-    ? (categoryRaw as Category)
+  const category = TICKET_CATEGORIES.includes(categoryRaw as TicketCategory)
+    ? (categoryRaw as TicketCategory)
     : undefined;
 
   if (!category) {

@@ -6,6 +6,7 @@ import { auth } from "./lib/auth.js";
 import { usersRouter } from "./routes/users.js";
 import { ticketsRouter } from "./routes/tickets.js";
 import { aiRouter } from "./routes/ai.js";
+import { webhooksRouter } from "./routes/webhooks.js";
 
 const app = express();
 const PORT = process.env.PORT ?? 3001;
@@ -28,6 +29,15 @@ if (process.env.NODE_ENV === "production") {
 
   app.use("/api/auth/sign-in", authLimiter);
   app.use("/api/auth/forget-password", authLimiter);
+
+  const webhookLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 60,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many webhook requests" },
+  });
+  app.use("/api/webhooks", webhookLimiter);
 }
 
 // Better Auth handler must come before express.json()
@@ -38,6 +48,7 @@ app.use(express.json());
 app.use("/api/users", usersRouter);
 app.use("/api/tickets", ticketsRouter);
 app.use("/api/ai", aiRouter);
+app.use("/api/webhooks", webhooksRouter);
 
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok" });

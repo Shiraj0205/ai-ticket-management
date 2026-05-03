@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
+import { TICKET_STATUSES, TICKET_CATEGORIES } from "../lib/enums.js";
 
 export const ticketsRouter = Router();
 
@@ -16,22 +17,18 @@ const createTicketSchema = z.object({
 
 // Fields any authenticated agent can update
 const agentUpdateSchema = z.object({
-  status: z.enum(["OPEN", "RESOLVED", "CLOSED"]).optional(),
+  status: z.enum(TICKET_STATUSES).optional(),
 });
 
 // Additional fields restricted to admins
 const adminUpdateSchema = agentUpdateSchema.extend({
-  category: z
-    .enum(["GENERAL_QUESTION", "TECHNICAL_QUESTION", "REFUND_REQUEST"])
-    .optional(),
+  category: z.enum(TICKET_CATEGORIES).optional(),
   assignedAgentId: z.string().nullable().optional(),
 });
 
 const listTicketsSchema = z.object({
-  status: z.enum(["OPEN", "RESOLVED", "CLOSED"]).optional(),
-  category: z
-    .enum(["GENERAL_QUESTION", "TECHNICAL_QUESTION", "REFUND_REQUEST"])
-    .optional(),
+  status: z.enum(TICKET_STATUSES).optional(),
+  category: z.enum(TICKET_CATEGORIES).optional(),
   sortBy: z.enum(["createdAt", "updatedAt"]).optional().default("createdAt"),
   sortOrder: z.enum(["asc", "desc"]).optional().default("desc"),
   page: z.coerce.number().int().positive().optional().default(1),

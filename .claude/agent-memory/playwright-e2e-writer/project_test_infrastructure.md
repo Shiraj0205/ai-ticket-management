@@ -6,6 +6,7 @@ type: project
 
 **Test files:**
 - `e2e/auth.spec.ts` — 25 auth tests (happy paths, validation, session, RBAC, API guards)
+- `e2e/users.spec.ts` — user management CRUD happy paths (list, create, edit, delete/soft-delete)
 - `e2e/pages/auth.page.ts` — LoginPage and AppShell Page Object Models
 - `e2e/global-setup.ts` — updated to run seed after migrations
 - `e2e/global-teardown.ts` — resets test DB with `prisma migrate reset --force`
@@ -21,6 +22,11 @@ type: project
 - Sign-out button: `page.getByRole("button", { name: /sign out/i })`
 - Server error: `div.bg-red-50 p.text-sm.text-red-700`
 - Client validation errors: `p.text-red-600` filtered by text content
+- UsersPage table rows scoped by email: `page.getByRole("row").filter({ hasText: email })`
+- Modal container: `page.locator("div.fixed.inset-0")`
+- CreateUserModal/EditUserModal inputs: target by type within modal (`input[type='text']`, `input[type='email']`, `input[type='password']`) — labels lack `htmlFor` so `getByLabel` is unreliable
+- Role select in EditUserModal: `modal.getByRole("combobox")`
+- "New Agent" button on UsersPage: `page.getByRole("button", { name: /new agent/i })`
 
 **API base URL for direct requests:** `http://localhost:3002`
 
