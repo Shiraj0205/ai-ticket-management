@@ -7,6 +7,7 @@ type: project
 **Test files:**
 - `e2e/auth.spec.ts` — 25 auth tests (happy paths, validation, session, RBAC, API guards)
 - `e2e/users.spec.ts` — user management CRUD happy paths (list, create, edit, delete/soft-delete)
+- `e2e/webhooks.spec.ts` — inbound-email webhook (secret auth, payload validation, DB persistence)
 - `e2e/pages/auth.page.ts` — LoginPage and AppShell Page Object Models
 - `e2e/global-setup.ts` — updated to run seed after migrations
 - `e2e/global-teardown.ts` — resets test DB with `prisma migrate reset --force`
@@ -33,3 +34,9 @@ type: project
 **Why:** Vite proxy handles `/api` → `localhost:3002` in browser context, but Playwright's `request` fixture bypasses the proxy and needs the full origin.
 
 **How to apply:** Use `page.request.post()` for programmatic login (uses browser cookie jar). Use the `request` fixture directly for pure API assertions (no browser context needed).
+
+**Webhook / secret-header pattern:**
+- Pass `secret: null` to `postWebhook` helper to omit the `X-Webhook-Secret` header entirely (tests the missing-header 403 case).
+- Pass `secret: "wrong-value"` to test wrong-secret 403.
+- To verify a webhook-created ticket persists, call `adminSessionCookie(request)` to get a session cookie, then `GET /api/tickets/:id` with `Cookie` header — the tickets route requires auth even for reads.
+- `server/.env.test` must contain `WEBHOOK_SECRET="change-this-to-a-long-random-string"` for webhook tests to pass.
