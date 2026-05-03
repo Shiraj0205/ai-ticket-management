@@ -29,7 +29,8 @@ const adminUpdateSchema = agentUpdateSchema.extend({
 const listTicketsSchema = z.object({
   status: z.enum(TICKET_STATUSES).optional(),
   category: z.enum(TICKET_CATEGORIES).optional(),
-  sortBy: z.enum(["createdAt", "updatedAt"]).optional().default("createdAt"),
+  search: z.string().optional(),
+  sortBy: z.enum(["createdAt", "updatedAt", "subject", "status", "category", "fromEmail"]).optional().default("createdAt"),
   sortOrder: z.enum(["asc", "desc"]).optional().default("desc"),
   page: z.coerce.number().int().positive().optional().default(1),
   pageSize: z.coerce.number().int().positive().max(100).optional().default(20),
@@ -51,12 +52,19 @@ ticketsRouter.get("/", async (req, res) => {
     return;
   }
 
-  const { status, category, sortBy, sortOrder, page, pageSize } = result.data;
+  const { status, category, search, sortBy, sortOrder, page, pageSize } = result.data;
   const skip = (page - 1) * pageSize;
 
   const where = {
     ...(status && { status }),
     ...(category && { category }),
+    ...(search && {
+      OR: [
+        { subject: { contains: search, mode: "insensitive" as const } },
+        { fromEmail: { contains: search, mode: "insensitive" as const } },
+        { fromName: { contains: search, mode: "insensitive" as const } },
+      ],
+    }),
   };
 
   const [tickets, total] = await Promise.all([

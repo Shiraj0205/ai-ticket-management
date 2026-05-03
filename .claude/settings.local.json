@@ -40,7 +40,12 @@
       "Bash(/c/Users/iss_s/.bun/bin/bun run *)",
       "Bash(npx vitest *)",
       "PowerShell(Get-Content *)",
-      "PowerShell(cd D:\\\\Data\\\\Projects\\\\ai-ticket-management\\\\client; Start-Process -FilePath \"C:\\\\Users\\\\iss_s\\\\.bun\\\\bin\\\\bun.exe\" -ArgumentList \"x vite\" -PassThru -RedirectStandardOutput \"$env:TEMP\\\\client-out.txt\" -RedirectStandardError \"$env:TEMP\\\\client-err.txt\")"
+      "PowerShell(cd D:\\\\Data\\\\Projects\\\\ai-ticket-management\\\\client; Start-Process -FilePath \"C:\\\\Users\\\\iss_s\\\\.bun\\\\bin\\\\bun.exe\" -ArgumentList \"x vite\" -PassThru -RedirectStandardOutput \"$env:TEMP\\\\client-out.txt\" -RedirectStandardError \"$env:TEMP\\\\client-err.txt\")",
+      "Bash(python -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\([k for k in d.get\\('packages',{}\\) if 'react-table' in k][:5]\\)\")",
+      "Bash(npm show *)",
+      "Read(//c/Users/iss_s/.bun/bin/**)",
+      "Read(//c/Users/**)",
+      "Bash(~/.bun/bin/bun run *)"
     ]
   }
 }
