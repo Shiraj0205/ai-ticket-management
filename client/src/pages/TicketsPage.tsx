@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
-import { api } from "../lib/api.js";
+import { useSearchParams, Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { ticketsApi } from "../lib/tickets.js";
 import { Skeleton } from "../components/ui/skeleton.js";
-import type { PaginatedTickets, TicketStatus, TicketCategory } from "../types/index.js";
+import type { TicketStatus, TicketCategory } from "../types/index.js";
 
 const STATUS_COLORS: Record<TicketStatus, string> = {
   OPEN: "bg-yellow-100 text-yellow-800",
@@ -16,28 +16,19 @@ const CATEGORY_LABELS: Record<TicketCategory, string> = {
   REFUND_REQUEST: "Refund",
 };
 
+const COLUMNS = ["Subject", "From", "Status", "Category", "Assigned", "Created"];
+
 export default function TicketsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [data, setData] = useState<PaginatedTickets | null>(null);
-  const [loading, setLoading] = useState(true);
 
-  const status = searchParams.get("status") ?? "";
-  const category = searchParams.get("category") ?? "";
+  const status = (searchParams.get("status") ?? "") as TicketStatus | "";
+  const category = (searchParams.get("category") ?? "") as TicketCategory | "";
   const page = Number(searchParams.get("page") ?? "1");
 
-  useEffect(() => {
-    setLoading(true);
-    const params = new URLSearchParams();
-    if (status) params.set("status", status);
-    if (category) params.set("category", category);
-    params.set("page", String(page));
-    params.set("pageSize", "20");
-
-    api
-      .get<PaginatedTickets>(`/tickets?${params.toString()}`)
-      .then(setData)
-      .finally(() => setLoading(false));
-  }, [status, category, page]);
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["tickets", { status, category, page }],
+    queryFn: () => ticketsApi.list({ status, category, page }),
+  });
 
   function setFilter(key: string, value: string) {
     const next = new URLSearchParams(searchParams);
@@ -47,11 +38,24 @@ export default function TicketsPage() {
     setSearchParams(next);
   }
 
+  function setPage(p: number) {
+    const next = new URLSearchParams(searchParams);
+    next.set("page", String(p));
+    setSearchParams(next);
+  }
+
   const totalPages = data ? Math.ceil(data.total / data.pageSize) : 1;
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold text-gray-900">Tickets</h1>
+      <div>
+        <h1 className="text-xl font-semibold text-gray-900">Tickets</h1>
+        {data && (
+          <p className="text-sm text-gray-500 mt-0.5">
+            {data.total} {data.total === 1 ? "ticket" : "tickets"} total
+          </p>
+        )}
+      </div>
 
       {/* Filters */}
       <div className="flex gap-3">
@@ -77,21 +81,30 @@ export default function TicketsPage() {
         </select>
       </div>
 
+      {error && (
+        <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-4 py-3">
+          {(error as Error).message ?? "Failed to load tickets"}
+        </p>
+      )}
+
       {/* Table */}
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        {loading ? (
-          <table className="min-w-full divide-y divide-gray-100">
-            <thead className="bg-gray-50">
-              <tr>
-                {["Subject", "From", "Status", "Category", "Assigned", "Created"].map((h) => (
-                  <th key={h} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {Array.from({ length: 8 }).map((_, i) => (
+        <table className="min-w-full divide-y divide-gray-100">
+          <thead className="bg-gray-50">
+            <tr>
+              {COLUMNS.map((h) => (
+                <th
+                  key={h}
+                  className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide"
+                >
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {isLoading ? (
+              Array.from({ length: 8 }).map((_, i) => (
                 <tr key={i}>
                   <td className="px-5 py-3"><Skeleton className="h-4 w-48" /></td>
                   <td className="px-5 py-3"><Skeleton className="h-4 w-36" /></td>
@@ -100,35 +113,16 @@ export default function TicketsPage() {
                   <td className="px-5 py-3"><Skeleton className="h-4 w-24" /></td>
                   <td className="px-5 py-3"><Skeleton className="h-4 w-20" /></td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <table className="min-w-full divide-y divide-gray-100">
-            <thead className="bg-gray-50">
+              ))
+            ) : data?.tickets.length === 0 ? (
               <tr>
-                {["Subject", "From", "Status", "Category", "Assigned", "Created"].map(
-                  (h) => (
-                    <th
-                      key={h}
-                      className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide"
-                    >
-                      {h}
-                    </th>
-                  )
-                )}
+                <td colSpan={6} className="px-5 py-8 text-sm text-gray-400 text-center">
+                  No tickets found.
+                </td>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {data?.tickets.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="px-5 py-6 text-sm text-gray-400">
-                    No tickets found.
-                  </td>
-                </tr>
-              )}
-              {data?.tickets.map((t) => (
-                <tr key={t.id} className="hover:bg-gray-50">
+            ) : (
+              data?.tickets.map((t) => (
+                <tr key={t.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-5 py-3 text-sm">
                     <Link
                       to={`/tickets/${t.id}`}
@@ -138,12 +132,17 @@ export default function TicketsPage() {
                     </Link>
                   </td>
                   <td className="px-5 py-3 text-sm text-gray-500">
-                    {t.fromEmail}
+                    {t.fromName ? (
+                      <span>
+                        {t.fromName}{" "}
+                        <span className="text-gray-400 text-xs">{t.fromEmail}</span>
+                      </span>
+                    ) : (
+                      t.fromEmail
+                    )}
                   </td>
                   <td className="px-5 py-3">
-                    <span
-                      className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[t.status]}`}
-                    >
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[t.status]}`}>
                       {t.status}
                     </span>
                   </td>
@@ -157,19 +156,19 @@ export default function TicketsPage() {
                     {new Date(t.createdAt).toLocaleDateString()}
                   </td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex gap-2 justify-end">
+        <div className="flex items-center justify-end gap-2">
           <button
             disabled={page <= 1}
-            onClick={() => setFilter("page", String(page - 1))}
-            className="px-3 py-1.5 text-sm border rounded-md disabled:opacity-40"
+            onClick={() => setPage(page - 1)}
+            className="px-3 py-1.5 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Previous
           </button>
@@ -178,8 +177,8 @@ export default function TicketsPage() {
           </span>
           <button
             disabled={page >= totalPages}
-            onClick={() => setFilter("page", String(page + 1))}
-            className="px-3 py-1.5 text-sm border rounded-md disabled:opacity-40"
+            onClick={() => setPage(page + 1)}
+            className="px-3 py-1.5 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Next
           </button>
