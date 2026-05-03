@@ -19,6 +19,8 @@ export interface ListTicketsParams {
   sortOrder?: "asc" | "desc";
 }
 
+export type AgentOption = { id: string; name: string; email: string };
+
 export const ticketsApi = {
   list: (params: ListTicketsParams = {}) => {
     const query = new URLSearchParams();
@@ -32,6 +34,9 @@ export const ticketsApi = {
     return api.get<PaginatedTickets>(`/tickets?${query.toString()}`);
   },
   get: (id: string) => api.get<Ticket>(`/tickets/${id}`),
+  getAgents: () => api.get<AgentOption[]>("/tickets/agents"),
   update: (id: string, data: Partial<Pick<Ticket, "status" | "category" | "assignedAgentId">>) =>
     api.patch<Ticket>(`/tickets/${id}`, data),
+  runAi: (action: "classify" | "summarize" | "suggest-reply", ticketId: string) =>
+    api.post(`/ai/${action}`, { ticketId }),
 };

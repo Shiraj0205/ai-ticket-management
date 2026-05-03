@@ -45,7 +45,12 @@
       "Bash(npm show *)",
       "Read(//c/Users/iss_s/.bun/bin/**)",
       "Read(//c/Users/**)",
-      "Bash(~/.bun/bin/bun run *)"
+      "Bash(~/.bun/bin/bun run *)",
+      "Bash(Get-ChildItem -Path \"D:\\\\Data\\\\Projects\\\\ai-ticket-management\" -Recurse -Directory -Name)",
+      "Bash(Select-Object -First 30)",
+      "Bash(grep -E \"\\\\.\\(ts|js|tsx\\)$\")",
+      "Bash(npx concurrently *)",
+      "Bash(npx tsc *)"
     ]
   }
 }
