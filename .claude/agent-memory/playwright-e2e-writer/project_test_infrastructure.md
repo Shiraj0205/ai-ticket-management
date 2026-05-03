@@ -8,6 +8,7 @@ type: project
 - `e2e/auth.spec.ts` — 25 auth tests (happy paths, validation, session, RBAC, API guards)
 - `e2e/users.spec.ts` — user management CRUD happy paths (list, create, edit, delete/soft-delete)
 - `e2e/webhooks.spec.ts` — inbound-email webhook (secret auth, payload validation, DB persistence)
+- `e2e/ticket-agent-assignment.spec.ts` — 7 tests covering agent assignment on TicketDetailPage
 - `e2e/pages/auth.page.ts` — LoginPage and AppShell Page Object Models
 - `e2e/global-setup.ts` — updated to run seed after migrations
 - `e2e/global-teardown.ts` — resets test DB with `prisma migrate reset --force`
@@ -28,6 +29,15 @@ type: project
 - CreateUserModal/EditUserModal inputs: target by type within modal (`input[type='text']`, `input[type='email']`, `input[type='password']`) — labels lack `htmlFor` so `getByLabel` is unreliable
 - Role select in EditUserModal: `modal.getByRole("combobox")`
 - "New Agent" button on UsersPage: `page.getByRole("button", { name: /new agent/i })`
+- TicketDetailPage agent select (no `htmlFor`): `page.locator("label").filter({ hasText: "Assigned Agent" }).locator("..")` to scope to the panel, then `.getByRole("combobox")` within it
+- TicketDetailPage heading for load check: `page.getByRole("heading", { name: /ticket management/i })`
+
+**TicketDetailPage — agent assignment notes:**
+- `PATCH /api/tickets/:id` with `{ assignedAgentId }` is ADMIN-only (adminUpdateSchema). Tests must log in as admin.
+- `GET /api/tickets/agents` returns `{ id, name }` only — no `email`. The email shown below the select comes from `ticket.assignedAgent.email` on the ticket object itself.
+- Each test creates its own ticket via `POST /api/tickets` through the Vite proxy (same session cookie) and pre-conditions "already assigned" state via direct API call before navigating to the detail page.
+- Use `page.route(url, handler)` with an artificial delay + `resolveRoute` promise to observe the `disabled` state on selects while a TanStack Query mutation is in-flight.
+- `getAgentId(page, name)` helper fetches `/api/tickets/agents` and looks up by name — used to get the seeded "Agent" user's DB id at runtime (UUIDs are not hardcodable).
 
 **API base URL for direct requests:** `http://localhost:3002`
 

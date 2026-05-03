@@ -3,9 +3,14 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ticketsApi } from "../lib/tickets.js";
 import { Skeleton } from "../components/ui/skeleton.js";
-import type { Ticket, TicketStatus } from "../types/index.js";
+import type { Ticket, TicketStatus, TicketCategory } from "../types/index.js";
 
 const STATUS_OPTIONS: TicketStatus[] = ["OPEN", "RESOLVED", "CLOSED"];
+const CATEGORY_OPTIONS: { value: TicketCategory; label: string }[] = [
+  { value: "GENERAL_QUESTION", label: "General Question" },
+  { value: "TECHNICAL_QUESTION", label: "Technical Question" },
+  { value: "REFUND_REQUEST", label: "Refund Request" },
+];
 
 export default function TicketDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -69,9 +74,13 @@ export default function TicketDetailPage() {
             <Skeleton className="h-4 w-3/4" />
           </div>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-6 grid grid-cols-2 gap-4">
+        <div className="bg-white rounded-lg border border-gray-200 p-6 grid grid-cols-3 gap-4">
           <div className="space-y-2">
             <Skeleton className="h-3 w-12" />
+            <Skeleton className="h-9 w-full rounded-md" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="h-3 w-16" />
             <Skeleton className="h-9 w-full rounded-md" />
           </div>
           <div className="space-y-2">
@@ -134,7 +143,7 @@ export default function TicketDetailPage() {
           </p>
         )}
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1">Status</label>
             <select
@@ -145,6 +154,23 @@ export default function TicketDetailPage() {
             >
               {STATUS_OPTIONS.map((s) => (
                 <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Category</label>
+            <select
+              value={ticket.category ?? ""}
+              onChange={(e) =>
+                updateMutation.mutate({ category: (e.target.value as TicketCategory) || null })
+              }
+              disabled={updateMutation.isPending}
+              className="border border-gray-300 rounded-md px-3 py-1.5 text-sm w-full disabled:opacity-50"
+            >
+              <option value="">Uncategorized</option>
+              {CATEGORY_OPTIONS.map((c) => (
+                <option key={c.value} value={c.value}>{c.label}</option>
               ))}
             </select>
           </div>
@@ -202,15 +228,6 @@ export default function TicketDetailPage() {
             {aiLoading === "suggest-reply" ? "Generating..." : "Suggest Reply"}
           </button>
         </div>
-
-        {ticket.category && (
-          <div>
-            <p className="text-xs text-gray-500 mb-0.5">Category</p>
-            <span className="text-sm font-medium text-purple-700 bg-purple-50 px-2 py-0.5 rounded">
-              {ticket.category.replace(/_/g, " ")}
-            </span>
-          </div>
-        )}
 
         {ticket.aiSummary && (
           <div>
