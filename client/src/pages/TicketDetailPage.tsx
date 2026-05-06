@@ -58,8 +58,12 @@ export default function TicketDetailPage() {
     register,
     handleSubmit,
     reset,
+    watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<ReplyFormData>({ resolver: zodResolver(replySchema) });
+
+  const currentBody = watch("body") ?? "";
 
   const replyMutation = useMutation({
     mutationFn: (body: string) => ticketsApi.createReply(id!, body),
@@ -69,6 +73,13 @@ export default function TicketDetailPage() {
         (prev: typeof replies) => [...(prev ?? []), newReply]
       );
       reset();
+    },
+  });
+
+  const polishMutation = useMutation({
+    mutationFn: (body: string) => ticketsApi.polishReply(body, ticket?.fromName),
+    onSuccess: ({ polishedBody }) => {
+      setValue("body", polishedBody, { shouldValidate: true, shouldDirty: true });
     },
   });
 
@@ -212,10 +223,23 @@ export default function TicketDetailPage() {
               {replyMutation.error instanceof Error ? replyMutation.error.message : "Failed to send reply"}
             </p>
           )}
-          <div className="flex justify-end">
+          {polishMutation.isError && (
+            <p className="text-xs text-red-600">
+              {polishMutation.error instanceof Error ? polishMutation.error.message : "Failed to polish reply"}
+            </p>
+          )}
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => polishMutation.mutate(currentBody)}
+              disabled={!currentBody.trim() || polishMutation.isPending || replyMutation.isPending}
+              className="px-3 py-1.5 text-sm bg-violet-600 text-white rounded-md hover:bg-violet-700 disabled:opacity-50"
+            >
+              {polishMutation.isPending ? "Polishing..." : "✦ Polish"}
+            </button>
             <button
               type="submit"
-              disabled={isSubmitting || replyMutation.isPending}
+              disabled={isSubmitting || replyMutation.isPending || polishMutation.isPending}
               className="px-4 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
             >
               {replyMutation.isPending ? "Sending..." : "Send Reply"}

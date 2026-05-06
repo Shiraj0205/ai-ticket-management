@@ -42,4 +42,6 @@ export const ticketsApi = {
   getReplies: (ticketId: string) => api.get<Reply[]>(`/tickets/${ticketId}/replies`),
   createReply: (ticketId: string, body: string) =>
     api.post<Reply>(`/tickets/${ticketId}/replies`, { body }),
+  polishReply: (body: string, fromName?: string | null) =>
+    api.post<{ polishedBody: string }>("/ai/polish-reply", { body, fromName: fromName ?? undefined }),
 };
