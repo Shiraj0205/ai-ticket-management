@@ -29,6 +29,16 @@ export interface Ticket {
   updatedAt: string;
 }
 
+export interface Reply {
+  id: string;
+  body: string;
+  ticketId: string;
+  authorId: string;
+  author: Pick<User, "id" | "name" | "email">;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface PaginatedTickets {
   tickets: Ticket[];
   total: number;

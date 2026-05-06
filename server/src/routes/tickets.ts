@@ -146,3 +146,58 @@ ticketsRouter.patch("/:id", async (req, res) => {
     res.status(404).json({ error: "Ticket not found" });
   }
 });
+
+const createReplySchema = z.object({
+  body: z.string().min(1),
+});
+
+ticketsRouter.get("/:id/replies", async (req, res) => {
+  try {
+    const ticket = await prisma.ticket.findUnique({ where: { id: req.params.id } });
+    if (!ticket) {
+      res.status(404).json({ error: "Ticket not found" });
+      return;
+    }
+
+    const replies = await prisma.reply.findMany({
+      where: { ticketId: req.params.id },
+      include: { author: { select: { id: true, name: true, email: true } } },
+      orderBy: { createdAt: "asc" },
+    });
+
+    res.json(replies);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+ticketsRouter.post("/:id/replies", async (req, res) => {
+  try {
+    const ticket = await prisma.ticket.findUnique({ where: { id: req.params.id } });
+    if (!ticket) {
+      res.status(404).json({ error: "Ticket not found" });
+      return;
+    }
+
+    const result = createReplySchema.safeParse(req.body);
+    if (!result.success) {
+      res.status(400).json({ error: result.error.flatten() });
+      return;
+    }
+
+    const reply = await prisma.reply.create({
+      data: {
+        body: result.data.body,
+        ticketId: req.params.id,
+        authorId: req.authUser!.id,
+      },
+      include: { author: { select: { id: true, name: true, email: true } } },
+    });
+
+    res.status(201).json(reply);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});

@@ -50,7 +50,13 @@
       "Bash(Select-Object -First 30)",
       "Bash(grep -E \"\\\\.\\(ts|js|tsx\\)$\")",
       "Bash(npx concurrently *)",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(Get-ChildItem -Path \"D:\\\\Data\\\\Projects\\\\ai-ticket-management\" -Recurse -Depth 2)",
+      "Bash(Select-Object FullName)",
+      "PowerShell(cd \"D:\\\\Data\\\\Projects\\\\ai-ticket-management\\\\server\"; $env:DATABASE_URL=\"postgresql://postgres:Cottontop@946@localhost:5432/helpdesk\"; npx prisma migrate dev --name add_reply_model 2>&1)",
+      "PowerShell(cd \"D:\\\\Data\\\\Projects\\\\ai-ticket-management\\\\server\"; $env:DATABASE_URL=\"postgresql://postgres:Cottontop@946@localhost:5432/helpdesk\"; node -e \"console.log\\(process.env.DATABASE_URL\\)\")",
+      "Bash(export DATABASE_URL=\"postgresql://postgres:Cottontop@946@localhost:5432/helpdesk\")",
+      "Bash(node_modules/.bin/prisma.exe migrate *)"
     ]
   }
 }

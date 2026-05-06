@@ -1,5 +1,5 @@
 import { api } from "./api.js";
-import type { PaginatedTickets, Ticket, TicketStatus, TicketCategory } from "../types/index.js";
+import type { PaginatedTickets, Reply, Ticket, TicketStatus, TicketCategory } from "../types/index.js";
 
 export type SortableTicketField =
   | "createdAt"
@@ -39,4 +39,7 @@ export const ticketsApi = {
     api.patch<Ticket>(`/tickets/${id}`, data),
   runAi: (action: "classify" | "summarize" | "suggest-reply", ticketId: string) =>
     api.post(`/ai/${action}`, { ticketId }),
+  getReplies: (ticketId: string) => api.get<Reply[]>(`/tickets/${ticketId}/replies`),
+  createReply: (ticketId: string, body: string) =>
+    api.post<Reply>(`/tickets/${ticketId}/replies`, { body }),
 };
