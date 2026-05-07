@@ -39,6 +39,14 @@ export interface Reply {
   updatedAt: string;
 }
 
+export interface DashboardStats {
+  totalTickets: number;
+  openTickets: number;
+  aiResolvedCount: number;
+  aiResolvedPercentage: number;
+  avgResolutionHours: number | null;
+}
+
 export interface PaginatedTickets {
   tickets: Ticket[];
   total: number;

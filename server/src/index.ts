@@ -7,6 +7,7 @@ import { usersRouter } from "./routes/users.js";
 import { ticketsRouter } from "./routes/tickets.js";
 import { aiRouter } from "./routes/ai.js";
 import { webhooksRouter } from "./routes/webhooks.js";
+import { dashboardRouter } from "./routes/dashboard.js";
 import { boss } from "./lib/boss.js";
 import { startClassifyWorker } from "./workers/classifyWorker.js";
 
@@ -51,6 +52,7 @@ app.use("/api/users", usersRouter);
 app.use("/api/tickets", ticketsRouter);
 app.use("/api/ai", aiRouter);
 app.use("/api/webhooks", webhooksRouter);
+app.use("/api/dashboard", dashboardRouter);
 
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok" });
