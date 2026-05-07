@@ -1,5 +1,4 @@
 import { Router } from "express";
-import Anthropic from "@anthropic-ai/sdk";
 import { createOpenAI } from "@ai-sdk/openai";
 import { generateText } from "ai";
 import { z } from "zod";
@@ -13,8 +12,6 @@ export const aiRouter = Router();
 
 aiRouter.use(requireAuth);
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
 const ticketBodySchema = z.object({
   ticketId: z.string(),
 });
@@ -26,44 +23,42 @@ aiRouter.post("/classify", async (req, res) => {
     return;
   }
 
-  const ticket = await prisma.ticket.findUnique({
-    where: { id: result.data.ticketId },
-  });
-  if (!ticket) {
-    res.status(404).json({ error: "Ticket not found" });
-    return;
+  try {
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: result.data.ticketId },
+    });
+    if (!ticket) {
+      res.status(404).json({ error: "Ticket not found" });
+      return;
+    }
+
+    const { text } = await generateText({
+      model: openai("gpt-4o-mini"),
+      system:
+        "You are a support ticket classifier. Respond with exactly one of: GENERAL_QUESTION, TECHNICAL_QUESTION, REFUND_REQUEST",
+      prompt: `Subject: ${ticket.subject}\n\n${ticket.body}`,
+    });
+
+    const categoryRaw = text.trim();
+    const category = TICKET_CATEGORIES.includes(categoryRaw as TicketCategory)
+      ? (categoryRaw as TicketCategory)
+      : undefined;
+
+    if (!category) {
+      res.status(500).json({ error: "Invalid classification from AI" });
+      return;
+    }
+
+    const updated = await prisma.ticket.update({
+      where: { id: ticket.id },
+      data: { category },
+    });
+
+    res.json({ category: updated.category });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to classify ticket" });
   }
-
-  const message = await client.messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 100,
-    system:
-      "You are a support ticket classifier. Respond with exactly one of: GENERAL_QUESTION, TECHNICAL_QUESTION, REFUND_REQUEST",
-    messages: [
-      {
-        role: "user",
-        content: `Subject: ${ticket.subject}\n\n${ticket.body}`,
-      },
-    ],
-  });
-
-  const categoryRaw =
-    message.content[0].type === "text" ? message.content[0].text.trim() : "";
-  const category = TICKET_CATEGORIES.includes(categoryRaw as TicketCategory)
-    ? (categoryRaw as TicketCategory)
-    : undefined;
-
-  if (!category) {
-    res.status(500).json({ error: "Invalid classification from AI" });
-    return;
-  }
-
-  const updated = await prisma.ticket.update({
-    where: { id: ticket.id },
-    data: { category },
-  });
-
-  res.json({ category: updated.category });
 });
 
 aiRouter.post("/summarize", async (req, res) => {
@@ -73,36 +68,48 @@ aiRouter.post("/summarize", async (req, res) => {
     return;
   }
 
-  const ticket = await prisma.ticket.findUnique({
-    where: { id: result.data.ticketId },
-  });
-  if (!ticket) {
-    res.status(404).json({ error: "Ticket not found" });
-    return;
+  try {
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: result.data.ticketId },
+    });
+    if (!ticket) {
+      res.status(404).json({ error: "Ticket not found" });
+      return;
+    }
+
+    const replies = await prisma.reply.findMany({
+      where: { ticketId: ticket.id },
+      include: { author: { select: { name: true } } },
+      orderBy: { createdAt: "asc" },
+    });
+
+    const conversationSection =
+      replies.length > 0
+        ? `\n\nConversation History:\n${replies
+            .map(
+              (r) =>
+                `[${r.author.name} — ${new Date(r.createdAt).toLocaleString()}]\n${r.body}`
+            )
+            .join("\n\n")}`
+        : "";
+
+    const { text: aiSummary } = await generateText({
+      model: openai("gpt-4o-mini"),
+      system:
+        "You are a support assistant. Summarize the following support ticket and its conversation history in 2-4 concise sentences. Cover the core issue, any steps or resolutions discussed, and the current status.",
+      prompt: `Subject: ${ticket.subject}\n\nCustomer message:\n${ticket.body}${conversationSection}`,
+    });
+
+    const updated = await prisma.ticket.update({
+      where: { id: ticket.id },
+      data: { aiSummary },
+    });
+
+    res.json({ summary: updated.aiSummary });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to summarize ticket" });
   }
-
-  const message = await client.messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 200,
-    system:
-      "You are a support assistant. Summarize the following support ticket in 2-3 concise sentences.",
-    messages: [
-      {
-        role: "user",
-        content: `Subject: ${ticket.subject}\n\n${ticket.body}`,
-      },
-    ],
-  });
-
-  const aiSummary =
-    message.content[0].type === "text" ? message.content[0].text : "";
-
-  const updated = await prisma.ticket.update({
-    where: { id: ticket.id },
-    data: { aiSummary },
-  });
-
-  res.json({ summary: updated.aiSummary });
 });
 
 aiRouter.post("/suggest-reply", async (req, res) => {
@@ -112,44 +119,40 @@ aiRouter.post("/suggest-reply", async (req, res) => {
     return;
   }
 
-  const ticket = await prisma.ticket.findUnique({
-    where: { id: result.data.ticketId },
-  });
-  if (!ticket) {
-    res.status(404).json({ error: "Ticket not found" });
-    return;
+  try {
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: result.data.ticketId },
+    });
+    if (!ticket) {
+      res.status(404).json({ error: "Ticket not found" });
+      return;
+    }
+
+    const knowledgeBase = await prisma.knowledgeBaseEntry.findMany({
+      select: { topic: true, content: true },
+    });
+
+    const kbContext =
+      knowledgeBase.length > 0
+        ? `\n\nKnowledge Base:\n${knowledgeBase.map((k) => `## ${k.topic}\n${k.content}`).join("\n\n")}`
+        : "";
+
+    const { text: aiSuggestedReply } = await generateText({
+      model: openai("gpt-4o-mini"),
+      system: `You are a helpful customer support agent. Write a friendly, professional reply to the following support ticket.${kbContext}`,
+      prompt: `Subject: ${ticket.subject}\n\n${ticket.body}`,
+    });
+
+    const updated = await prisma.ticket.update({
+      where: { id: ticket.id },
+      data: { aiSuggestedReply },
+    });
+
+    res.json({ reply: updated.aiSuggestedReply });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to suggest reply" });
   }
-
-  const knowledgeBase = await prisma.knowledgeBaseEntry.findMany({
-    select: { topic: true, content: true },
-  });
-
-  const kbContext =
-    knowledgeBase.length > 0
-      ? `\n\nKnowledge Base:\n${knowledgeBase.map((k) => `## ${k.topic}\n${k.content}`).join("\n\n")}`
-      : "";
-
-  const message = await client.messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 500,
-    system: `You are a helpful customer support agent. Write a friendly, professional reply to the following support ticket.${kbContext}`,
-    messages: [
-      {
-        role: "user",
-        content: `Subject: ${ticket.subject}\n\n${ticket.body}`,
-      },
-    ],
-  });
-
-  const aiSuggestedReply =
-    message.content[0].type === "text" ? message.content[0].text : "";
-
-  const updated = await prisma.ticket.update({
-    where: { id: ticket.id },
-    data: { aiSuggestedReply },
-  });
-
-  res.json({ reply: updated.aiSuggestedReply });
 });
 
 const polishReplySchema = z.object({
