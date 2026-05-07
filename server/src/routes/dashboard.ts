@@ -36,42 +36,25 @@ dashboardRouter.get("/tickets-per-day", async (_req, res) => {
   }
 });
 
+type StatsRow = {
+  totalTickets: bigint;
+  openTickets: bigint;
+  aiResolvedCount: bigint;
+  aiResolvedPercentage: unknown;
+  avgResolutionHours: unknown;
+};
+
 dashboardRouter.get("/stats", async (_req, res) => {
   try {
-    const [totalTickets, openTickets, resolvedTickets, aiResolvedCount] =
-      await Promise.all([
-        prisma.ticket.count(),
-        prisma.ticket.count({ where: { status: "OPEN" } }),
-        prisma.ticket.count({ where: { status: { in: ["RESOLVED", "CLOSED"] } } }),
-        prisma.ticket.count({
-          where: {
-            status: { in: ["RESOLVED", "CLOSED"] },
-            aiSuggestedReply: { not: null },
-          },
-        }),
-      ]);
-
-    const avgResult = await prisma.$queryRaw<[{ avg_hours: unknown }]>`
-      SELECT EXTRACT(EPOCH FROM AVG("updatedAt" - "createdAt")) / 3600 AS avg_hours
-      FROM "Ticket"
-      WHERE status::text IN ('RESOLVED', 'CLOSED')
-    `;
-
-    const rawAvg = avgResult[0]?.avg_hours;
-    const avgResolutionHours =
-      rawAvg != null ? Math.round(Number(rawAvg) * 10) / 10 : null;
-
-    const aiResolvedPercentage =
-      resolvedTickets > 0
-        ? Math.round((aiResolvedCount / resolvedTickets) * 1000) / 10
-        : 0;
+    const rows = await prisma.$queryRaw<StatsRow[]>`SELECT * FROM get_dashboard_stats()`;
+    const row = rows[0];
 
     res.json({
-      totalTickets,
-      openTickets,
-      aiResolvedCount,
-      aiResolvedPercentage,
-      avgResolutionHours,
+      totalTickets: Number(row.totalTickets),
+      openTickets: Number(row.openTickets),
+      aiResolvedCount: Number(row.aiResolvedCount),
+      aiResolvedPercentage: row.aiResolvedPercentage != null ? Number(row.aiResolvedPercentage) : 0,
+      avgResolutionHours: row.avgResolutionHours != null ? Number(row.avgResolutionHours) : null,
     });
   } catch (err) {
     console.error(err);
