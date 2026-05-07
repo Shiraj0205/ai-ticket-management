@@ -4,7 +4,8 @@ import { generateText } from "ai";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
-import { TICKET_CATEGORIES, type TicketCategory } from "../lib/enums.js";
+import { boss } from "../lib/boss.js";
+import { CLASSIFY_QUEUE } from "../workers/classifyWorker.js";
 
 const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -32,32 +33,12 @@ aiRouter.post("/classify", async (req, res) => {
       return;
     }
 
-    const { text } = await generateText({
-      model: openai("gpt-4o-mini"),
-      system:
-        "You are a support ticket classifier. Respond with exactly one of: GENERAL_QUESTION, TECHNICAL_QUESTION, REFUND_REQUEST",
-      prompt: `Subject: ${ticket.subject}\n\n${ticket.body}`,
-    });
-
-    const categoryRaw = text.trim();
-    const category = TICKET_CATEGORIES.includes(categoryRaw as TicketCategory)
-      ? (categoryRaw as TicketCategory)
-      : undefined;
-
-    if (!category) {
-      res.status(500).json({ error: "Invalid classification from AI" });
-      return;
-    }
-
-    const updated = await prisma.ticket.update({
-      where: { id: ticket.id },
-      data: { category },
-    });
-
-    res.json({ category: updated.category });
+    const jobId = await boss.send(CLASSIFY_QUEUE, { ticketId: ticket.id });
+    console.log(`[classify] job enqueued: ${jobId} for ticket ${ticket.id}`);
+    res.status(202).json({ queued: true, jobId });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Failed to classify ticket" });
+    res.status(500).json({ error: "Failed to queue classification" });
   }
 });
 

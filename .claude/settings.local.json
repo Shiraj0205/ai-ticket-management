@@ -57,7 +57,8 @@
       "PowerShell(cd \"D:\\\\Data\\\\Projects\\\\ai-ticket-management\\\\server\"; $env:DATABASE_URL=\"postgresql://postgres:Cottontop@946@localhost:5432/helpdesk\"; node -e \"console.log\\(process.env.DATABASE_URL\\)\")",
       "Bash(export DATABASE_URL=\"postgresql://postgres:Cottontop@946@localhost:5432/helpdesk\")",
       "Bash(node_modules/.bin/prisma.exe migrate *)",
-      "Bash(npm view *)"
+      "Bash(npm view *)",
+      "Bash(taskkill /F /IM bun.exe)"
     ]
   }
 }

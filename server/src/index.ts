@@ -7,6 +7,8 @@ import { usersRouter } from "./routes/users.js";
 import { ticketsRouter } from "./routes/tickets.js";
 import { aiRouter } from "./routes/ai.js";
 import { webhooksRouter } from "./routes/webhooks.js";
+import { boss } from "./lib/boss.js";
+import { startClassifyWorker } from "./workers/classifyWorker.js";
 
 const app = express();
 const PORT = process.env.PORT ?? 3001;
@@ -53,6 +55,11 @@ app.use("/api/webhooks", webhooksRouter);
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok" });
 });
+
+boss.start()
+  .then(() => startClassifyWorker())
+  .then(() => console.log("PgBoss started and classify worker registered"))
+  .catch((err) => console.error("PgBoss startup failed:", err));
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);

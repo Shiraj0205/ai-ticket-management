@@ -92,8 +92,20 @@ export default function TicketDetailPage() {
     setAiError("");
     try {
       await ticketsApi.runAi(action, ticket.id);
-      const updated = await ticketsApi.get(ticket.id);
-      queryClient.setQueryData(["ticket", id], updated);
+
+      if (action === "classify") {
+        // Job is async via PgBoss — poll until category changes or 30s timeout
+        const prevCategory = ticket.category;
+        for (let i = 0; i < 15; i++) {
+          await new Promise((r) => setTimeout(r, 2000));
+          const updated = await ticketsApi.get(ticket.id);
+          queryClient.setQueryData(["ticket", id], updated);
+          if (updated.category !== prevCategory) break;
+        }
+      } else {
+        const updated = await ticketsApi.get(ticket.id);
+        queryClient.setQueryData(["ticket", id], updated);
+      }
     } catch (err) {
       setAiError(err instanceof Error ? err.message : "AI action failed");
     } finally {
